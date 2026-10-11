@@ -41,9 +41,7 @@ void main() {
     expect(find.text('0'), findsOneWidget);
 
     expect(
-      find.text(
-        'Помилка: введіть ціле число або команду Avada Kedavra.',
-      ),
+      find.text('Помилка: введіть ціле число або команду Avada Kedavra.'),
       findsOneWidget,
     );
   });
