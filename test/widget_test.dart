@@ -1,30 +1,64 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:lab_02/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Login screen opens correctly', (tester) async {
+    await tester.pumpWidget(const SmartFitApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('SmartFit Weather'), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.text('Увійти'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('Login opens registration', (tester) async {
+    await tester.pumpWidget(const SmartFitApp());
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.text('Немає акаунта? Зареєструватися'));
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Створити акаунт'), findsOneWidget);
+    expect(find.text('Повторіть пароль'), findsOneWidget);
+  });
+
+  testWidgets('Login opens dashboard', (tester) async {
+    await tester.pumpWidget(const SmartFitApp());
+
+    await tester.tap(find.text('Увійти'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Добрий день!'), findsOneWidget);
+    expect(find.text('Львів'), findsOneWidget);
+    expect(find.text('6250'), findsOneWidget);
+  });
+
+  testWidgets('Dashboard opens workouts', (tester) async {
+    await tester.pumpWidget(const SmartFitApp());
+
+    await tester.tap(find.text('Увійти'));
+    await tester.pumpAndSettle();
+
+    final workoutButton = find.text('Переглянути тренування');
+
+    await tester.ensureVisible(workoutButton);
+    await tester.tap(workoutButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Обери тренування'), findsOneWidget);
+    expect(find.text('Біг на вулиці'), findsOneWidget);
+  });
+
+  testWidgets('Dashboard opens profile', (tester) async {
+    await tester.pumpWidget(const SmartFitApp());
+
+    await tester.tap(find.text('Увійти'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Мій профіль'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Мій профіль'), findsOneWidget);
+    expect(find.text('Користувач SmartFit'), findsOneWidget);
   });
 }
