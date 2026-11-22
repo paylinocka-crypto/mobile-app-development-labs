@@ -22,8 +22,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _userFuture = widget.authRepository.getCurrentUser();
   }
 
+  // ЛР4: спочатку запитуємо підтвердження виходу.
   Future<void> _logout() async {
     if (_loggingOut) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Вийти з акаунта?'),
+          content: const Text(
+            'Ви впевнені, що хочете завершити поточну сесію?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text('Скасувати'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('Вийти'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Якщо користувач скасував дію, сесія зберігається.
+    if (!mounted || confirmed != true) return;
 
     setState(() {
       _loggingOut = true;
@@ -35,6 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (!mounted) return;
 
+      // Після підтвердження повертаємося до входу.
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     } catch (_) {
       if (!mounted) return;
