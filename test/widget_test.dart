@@ -60,7 +60,6 @@ class FakeAuthRepository implements AuthRepository {
 }
 
 // Тестовий репозиторій тренувань.
-// Не використовує SharedPreferences.
 class FakeWorkoutRepository implements WorkoutRepository {
   final Map<String, List<Workout>> _storage = {};
 
@@ -103,7 +102,7 @@ class FakeWorkoutRepository implements WorkoutRepository {
   }
 }
 
-// Створюємо застосунок з тестовими репозиторіями.
+// Створюємо застосунок із тестовими репозиторіями.
 Widget createTestApp() {
   return SmartFitApp(
     authRepository: FakeAuthRepository(),
@@ -111,9 +110,19 @@ Widget createTestApp() {
   );
 }
 
-// Допоміжна функція для входу в застосунок.
-Future<void> openDashboard(WidgetTester tester) async {
+// ЛР4: очікуємо завершення перевірки сесії.
+// Після цього стає доступним екран входу.
+Future<void> openLogin(WidgetTester tester) async {
   await tester.pumpWidget(createTestApp());
+
+  await tester.pumpAndSettle();
+
+  expect(find.byType(LoginScreen), findsOneWidget);
+}
+
+// Виконуємо вхід у тестовий акаунт.
+Future<void> openDashboard(WidgetTester tester) async {
+  await openLogin(tester);
 
   await tester.enterText(find.byType(TextFormField).at(0), 'demo@example.com');
 
@@ -126,14 +135,16 @@ Future<void> openDashboard(WidgetTester tester) async {
 }
 
 void main() {
+  // Перевірка початкового екрана без сесії.
   testWidgets('Login screen opens correctly', (tester) async {
-    await tester.pumpWidget(createTestApp());
+    await openLogin(tester);
 
     expect(find.byType(LoginScreen), findsOneWidget);
   });
 
+  // Перехід із входу на реєстрацію.
   testWidgets('Login opens registration', (tester) async {
-    await tester.pumpWidget(createTestApp());
+    await openLogin(tester);
 
     await tester.tap(find.text('Немає акаунта? Зареєструватися'));
 
@@ -142,14 +153,16 @@ void main() {
     expect(find.byType(RegistrationScreen), findsOneWidget);
   });
 
+  // Успішний вхід.
   testWidgets('Valid login opens dashboard', (tester) async {
     await openDashboard(tester);
 
     expect(find.text('SmartFit Weather'), findsOneWidget);
   });
 
+  // Неправильний пароль не дозволяє увійти.
   testWidgets('Wrong password blocks login', (tester) async {
-    await tester.pumpWidget(createTestApp());
+    await openLogin(tester);
 
     await tester.enterText(
       find.byType(TextFormField).at(0),
@@ -169,6 +182,7 @@ void main() {
     expect(find.byType(DashboardScreen), findsNothing);
   });
 
+  // Перехід до тренувань.
   testWidgets('Dashboard opens workouts', (tester) async {
     await openDashboard(tester);
 
@@ -183,11 +197,11 @@ void main() {
     expect(find.byType(WorkoutScreen), findsOneWidget);
   });
 
+  // Перехід до профілю.
   testWidgets('Dashboard opens profile', (tester) async {
     await openDashboard(tester);
 
     await tester.tap(find.byTooltip('Мій профіль'));
-
     await tester.pumpAndSettle();
 
     expect(find.byType(ProfileScreen), findsOneWidget);

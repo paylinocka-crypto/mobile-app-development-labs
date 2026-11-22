@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:lab_02/data/local_auth_repository.dart';
 import 'package:lab_02/data/local_workout_repository.dart';
+import 'package:lab_02/data/network_aware_auth_repository.dart';
 
 import 'package:lab_02/domain/models/app_user.dart';
 import 'package:lab_02/domain/repositories/auth_repository.dart';
@@ -26,7 +27,13 @@ class SmartFitApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = authRepository ?? LocalAuthRepository();
+    // Для звичайної роботи перевіряємо мережу
+    // перед новим входом.
+    // Тестові репозиторії можна передати окремо.
+    final auth =
+        authRepository ??
+        NetworkAwareAuthRepository(delegate: LocalAuthRepository());
+
     final workouts = workoutRepository ?? LocalWorkoutRepository();
 
     return MaterialApp(
@@ -36,7 +43,10 @@ class SmartFitApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      initialRoute: '/login',
+
+      // ЛР4: спочатку перевіряємо збережену сесію.
+      initialRoute: '/dashboard',
+
       routes: {
         '/login': (context) => LoginScreen(authRepository: auth),
         '/register': (context) => RegistrationScreen(authRepository: auth),
@@ -60,7 +70,7 @@ class SmartFitApp extends StatelessWidget {
   }
 }
 
-// Перевіряємо авторизацію перед відкриттям захищеного екрана.
+// Захист маршрутів від неавторизованого доступу.
 class _SessionGuard extends StatefulWidget {
   const _SessionGuard({required this.authRepository, required this.builder});
 
@@ -130,10 +140,12 @@ class _SessionGuardState extends State<_SessionGuard> {
           );
         }
 
+        // Без сесії показуємо екран входу.
         if (snapshot.data == null) {
           return LoginScreen(authRepository: widget.authRepository);
         }
 
+        // Збережена сесія дозволяє відкрити екран.
         return widget.builder(context);
       },
     );

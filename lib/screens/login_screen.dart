@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:lab_02/data/network_aware_auth_repository.dart';
 import 'package:lab_02/domain/repositories/auth_repository.dart';
 import 'package:lab_02/domain/validators/auth_validator.dart';
 import 'package:lab_02/widgets/app_button.dart';
@@ -54,6 +56,21 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       Navigator.pushReplacementNamed(context, '/dashboard');
+    } on OfflineLoginException {
+      // ЛР4: повідомляємо про відсутність мережі.
+      if (!mounted) return;
+
+      const message =
+          'Немає мережевого підключення. '
+          'Для входу увімкніть Wi-Fi або мобільну мережу.';
+
+      setState(() {
+        _errorMessage = message;
+      });
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text(message)));
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -62,7 +79,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -88,36 +107,47 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Плануй тренування відповідно до погоди',
+                      'Плануй тренування '
+                      'відповідно до погоди',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
+
                     AppTextField(
                       label: 'Електронна пошта',
                       controller: _emailController,
                       validator: AuthValidator.validateEmail,
                     ),
+
                     const SizedBox(height: 16),
+
                     AppTextField(
                       label: 'Пароль',
                       controller: _passwordController,
                       validator: AuthValidator.validatePassword,
                       obscureText: true,
                     ),
+
                     const SizedBox(height: 16),
+
                     if (_errorMessage != null)
                       Text(
                         _errorMessage!,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
                         ),
                       ),
+
                     const SizedBox(height: 24),
+
                     if (_isLoading)
                       const CircularProgressIndicator()
                     else
                       AppButton(text: 'Увійти', onPressed: _signIn),
+
                     const SizedBox(height: 12),
+
                     TextButton(
                       onPressed: _isLoading
                           ? null

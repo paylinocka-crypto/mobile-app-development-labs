@@ -79,6 +79,35 @@ Future<void> navigateTo(WidgetTester tester, String route) async {
 }
 
 void main() {
+  // ЛР4: автологін за наявності сесії.
+  testWidgets('Lab04: auto-login opens dashboard', (tester) async {
+    final auth = FakeAuthRepository(
+      currentUser: const AppUser(
+        id: 'user-1',
+        name: 'Polina',
+        email: 'polina@example.com',
+      ),
+    );
+
+    await openApp(tester, auth);
+
+    expect(find.byType(DashboardScreen), findsOneWidget);
+
+    expect(find.byType(LoginScreen), findsNothing);
+  });
+
+  // ЛР4: без сесії відкривається логін.
+  testWidgets('Lab04: no session opens login', (tester) async {
+    final auth = FakeAuthRepository();
+
+    await openApp(tester, auth);
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+
+    expect(find.byType(DashboardScreen), findsNothing);
+  });
+
+  // ЛР3: неавторизований користувач не відкриє Dashboard.
   testWidgets('Unauthorized user cannot open dashboard', (tester) async {
     final auth = FakeAuthRepository();
 
@@ -90,6 +119,7 @@ void main() {
     expect(find.byType(LoginScreen), findsWidgets);
   });
 
+  // ЛР3: захист екрана тренувань.
   testWidgets('Unauthorized user cannot open workouts', (tester) async {
     final auth = FakeAuthRepository();
 
@@ -101,6 +131,7 @@ void main() {
     expect(find.byType(LoginScreen), findsWidgets);
   });
 
+  // ЛР3: захист профілю.
   testWidgets('Unauthorized user cannot open profile', (tester) async {
     final auth = FakeAuthRepository();
 
@@ -112,9 +143,38 @@ void main() {
     expect(find.byType(LoginScreen), findsWidgets);
   });
 
-  testWidgets('Profile shows user data and logout ends session', (
-    tester,
-  ) async {
+  // ЛР4: скасування виходу зберігає сесію.
+  testWidgets('Lab04: cancel logout keeps session', (tester) async {
+    final auth = FakeAuthRepository(
+      currentUser: const AppUser(
+        id: 'user-1',
+        name: 'Polina',
+        email: 'polina@example.com',
+      ),
+    );
+
+    await openApp(tester, auth);
+    await navigateTo(tester, '/profile');
+
+    await tester.tap(find.text('Вийти з акаунта'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+
+    expect(find.text('Вийти з акаунта?'), findsOneWidget);
+
+    await tester.tap(find.text('Скасувати'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+
+    expect(await auth.getCurrentUser(), isNotNull);
+
+    expect(find.byType(ProfileScreen), findsOneWidget);
+  });
+
+  // ЛР4: підтверджений вихід завершує сесію.
+  testWidgets('Lab04: confirmed logout ends session', (tester) async {
     final auth = FakeAuthRepository(
       currentUser: const AppUser(
         id: 'user-1',
@@ -133,7 +193,14 @@ void main() {
     expect(find.text('polina@example.com'), findsWidgets);
 
     await tester.tap(find.text('Вийти з акаунта'));
+    await tester.pumpAndSettle();
 
+    expect(find.byType(AlertDialog), findsOneWidget);
+
+    // До підтвердження сесія ще активна.
+    expect(await auth.getCurrentUser(), isNotNull);
+
+    await tester.tap(find.text('Вийти'));
     await tester.pumpAndSettle();
 
     expect(await auth.getCurrentUser(), isNull);
